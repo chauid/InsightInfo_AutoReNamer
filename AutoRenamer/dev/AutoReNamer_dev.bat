@@ -3,11 +3,13 @@ chcp 65001>nul
 setlocal ENABLEDELAYEDEXPANSION
 set current=%~dp0
 set batchname=%~nx0
-rem ##########CurrentVersion:137:##########
-set /a version=137
+rem ##########CurrentVersion:138:##########
+set /a version=138
 title AutoReName_ver%version:~0,1%.%version:~1,2%
 bcdedit > nul
 if %errorlevel% equ 1 goto noadmin
+call :CheckAlter
+cd %current%
 echo Initialize...
 rem ##########업데이트##########
 if "%1" neq "update" goto init
@@ -16,28 +18,34 @@ cd /d %current%
 ren "%batchname%" "AutoReNamer.bat" & start %current%"AutoReNamer.bat" & exit
 goto init
 :UpdateProgram
+echo 새로운 버전을 다운로드 중...
 powershell Invoke-WebRequest -Uri %serverIP%/files/AutoReNamer.bat -OutFile %current%NewVersion.bat
 powershell Invoke-WebRequest -Uri %serverIP%/files/update%ReName%log.txt -OutFile %current%AutoRenamer%ReName:~0,1%.%ReName:~1,2%updatelog.txt
+cd /d %userprofile%
+certutil /hashfile NewVersion.bat SHA256>hashcode
+for /f "tokens=* skip=1" %%i in (hashcode) do echo %%i>hashcode & goto :genhash
+:genhash
+echo 프로그램을 재시작합니다.
+timeout /t 1 >nul
 start %current%NewVersion.bat update
 del %current%%batchname%
 exit
 :UpdateNow
-if "%serverIP%" equ "0.0.0.0" echo 서버IP를 설정 후 업데이트하세요. & timeout /t 2 >nul & goto startScreen
 echo 서버와 연결중... [접속서버IP:%serverIP%]
 powershell (Invoke-WebRequest %serverIP%/files/AutoReNamer.bat).RawContent > ReNamer.txt
 for /f "delims=: tokens=2 skip=2" %%i in ('find "CurrentVersion" ReNamer.txt')  do set ReName=%%i & goto getVersion
 :getVersion
 del ReNamer.txt
 set /a ReName=ReName
-if %ReName% equ 0 echo 서버와 연결할 수 없습니다. 또는 인터넷 익스플로러 최초 실행이 필요합니다. & timeout /t 3 >nul & cls & goto init
+if %ReName% equ 0 echo 서버와 연결할 수 없습니다. 인터넷 연결을 확인하세요. 또는 인터넷 익스플로러 최초 실행이 필요합니다. & timeout /t 5 >nul & cls & goto Setting
 echo 현재 버전:%version:~0,1%.%version:~1,2%, 최신버전:%ReName:~0,1%.%ReName:~1,2%
-if %ReName% equ %version% echo 현재 최신 버전입니다. & timeout /t 4 > nul & cls & goto init
-if %ReName% lss %version% echo 서버의 버전보다 높습니다. 버전을 확인하세요. & timeout /t 2 >nul & start http://%serverIP%/ & goto init
+if %ReName% equ %version% echo 현재 최신 버전입니다. & timeout /t 4 > nul & cls & goto Setting
+if %ReName% lss %version% echo 서버의 버전보다 높습니다. 버전을 확인하세요. & timeout /t 2 >nul & start http://%serverIP%/ & goto Setting
 choice /c yn /m "업데이트 가능한 버전이 있습니다. 업데이트를 진행하시겠습니까?"
 if %errorlevel% equ 1 goto UpdateProgram
 if %errorlevel% equ 2 cls & goto goto startScreen
 :init
-set serverIP=0.0.0.0
+set serverIP=34.168.133.173
 set workercode=000
 set setdate=%date:~2,2%%date:~5,2%%date:~8,2%
 set mode=rename
@@ -57,7 +65,6 @@ if exist usersetting.txt (
     for /f "tokens=2 delims=: skip=1" %%i in ('find "mixfile" usersetting.txt') do set mixfile=%%i
     for /f "tokens=2 delims=: skip=1" %%i in ('find "backgroundcolor" usersetting.txt') do set bgcolor=%%i
     for /f "tokens=2 delims=: skip=1" %%i in ('find "textcolor" usersetting.txt') do set textcolor=%%i
-    for /f "tokens=2 delims=: skip=1" %%i in ('find "server" usersetting.txt') do set serverIP=%%i
 ) else (
     echo 사용자 설정 파일이 없음. 기본값으로 설정...
     timeout /t 1 >nul
@@ -87,13 +94,12 @@ echo ■■■■■■■■■■■■■■■■■■■■■■■■■
 WScript sleep.vbs
 echo ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 
 WScript sleep.vbs
-echo 1.시작하기  2.설정  3.업데이트  4.종료 
+echo 1.시작하기  2.설정  3.종료 
 del sleep.vbs
 choice /c 1234 /n /m "선택 : "
 if %errorlevel% equ 1 goto OnDirectory
 if %errorlevel% equ 2 set Callby=Main& goto Setting
-if %errorlevel% equ 3 goto UpdateNow
-if %errorlevel% equ 4 echo 프로그램을 종료합니다. & timeout /t 2 >nul & exit
+if %errorlevel% equ 3 echo 프로그램을 종료합니다. & timeout /t 2 >nul & exit
 rem ##########디렉터리 탐색##########
 :OnDirectory
 title 현재 디렉터리 경로 : %cd%
@@ -107,6 +113,11 @@ for /f %%i in ('dir /a:-d /b') do set /a filenum=filenum+1
 cls
 if %dirnum% lss 1 goto NoDir
 for /f "tokens=*" %%i in ('dir /a:d /b') do (set dirlist[%dirlistnum%]=%%i & goto LoadDirList)
+goto LoadDirList
+:endhash
+cd /d %userprofile%
+for /f "tokens=*" %%i in (hashcode) do set origin=%%i& call :Alteration
+exit /b
 :LoadDirList
 set /a dirlistnum=dirlistnum+1
 rem #####리스트의 인덱스는 1부터 시작, 따라서 문장스킵은 리스트의 인덱스 - 1#####
@@ -145,6 +156,9 @@ set /a temp=Todir-1
 if %Todir% gtr %dirnum% (echo 1~%dirnum%까지만 선택 가능합니다. & pause>nul & cls & set /a dirnum=dirnum-1 & goto EOF)
 if %temp% lss 0 (echo 1~%dirnum%까지만 선택 가능합니다. & pause>nul & cls & set /a dirnum=dirnum-1 & goto EOF)
 goto MvDir
+:Alteration
+if "%filehash%" neq "%origin%" call :ExitPro
+exit /b
 :NoDir
 echo 현재 경로 : %cd%
 echo ---------------------------------------------------------------------------
@@ -310,7 +324,7 @@ cls & goto InputSoundtype
 :Setting
 cls
 rem ##########이름바꾸기 설정, 프로그램 설정##########
-set /a MaxX=2
+set /a MaxX=3
 set /a MaxY=1
 set /a posMenuX=1
 set /a posMenuY=1
@@ -335,15 +349,18 @@ echo ^|---------------------------------------------------------^|
 set /p "=| "<nul
 if "(%posMenuX%,%posMenuY%)" equ "(1,1)" (set /p "=이름바꾸기 설정[*]  "<nul) else (set /p "=이름바꾸기 설정[ ]  "<nul)
 if "(%posMenuX%,%posMenuY%)" equ "(2,1)" (set /p "=프로그램 설정[*]  "<nul) else (set /p "=프로그램 설정[ ]  "<nul)
-echo                   ^|
+if "(%posMenuX%,%posMenuY%)" equ "(3,1)" (set /p "=업데이트[*]  "<nul) else (set /p "=업데이트[ ]  "<nul)
+echo      ^|
 echo ^|---------------------------------------------------------^|
 if "(%posMenuX%,%posMenuY%)" equ "(1,1)" echo ^| 워커코드, 날짜, 실행모드, 파일섞기 기능을 설정합니다.   ^|
-if "(%posMenuX%,%posMenuY%)" equ "(2,1)" echo ^| 프로그램의 색상 설정 및 서버IP를 설정합니다.            ^|
+if "(%posMenuX%,%posMenuY%)" equ "(2,1)" echo ^| 터미널 텍스트 및 배경 색을 설정합니다.                  ^|
+if "(%posMenuX%,%posMenuY%)" equ "(3,1)" echo ^| 프로그램 업데이트 및 재시작                             ^|
 echo *---------------------------------------------------------*
 goto inputSettingCode
 :SettingCodeSelected
 if "(%posMenuX%,%posMenuY%)" equ "(1,1)" goto SettingRename
 if "(%posMenuX%,%posMenuY%)" equ "(2,1)" goto SettingProgram
+if "(%posMenuX%,%posMenuY%)" equ "(3,1)" goto UpdateNow
 :SettingRename
 cls
 rem ##########이름바꾸기 설정//워커코드, 날짜, 선택옵션, 파일섞기 옵션##########
@@ -407,25 +424,29 @@ if "(%posMenuX%,%posMenuY%)" equ "(1,1)" (set /p "=이름 바꾸기[*]  "<nul) e
 if "(%posMenuX%,%posMenuY%)" equ "(2,1)" (set /p "=파일 복사[*]  "<nul) else (set /p "=파일 복사[ ]  "<nul)
 echo                             ^|
 echo ^|-----------------------------------------------------------^|
-echo ^| 이름 바꾸기 실행모드 : 폴더 내에 있는 모든 음원 파일들의  ^|
-echo ^| 이름을 소음/소리 데이터 이름양식으로 바꿉니다.            ^|
-echo ^| 이름 양식 :                                               ^|
-echo ^| [대분류]_[소분류]_[날짜]_[파일번호]_[소음/소리].[확장자]  ^|
-echo ^| ex)01_02_220630_001_NN.wav                                ^|
-echo ^| -^>소음-교통수단-철로운송수단, 22년 06월 30일에 녹음한 파일^|
-echo ^| 중 1번째 웨이브 파일                                      ^|
-echo ^| ※음원파일만 이름을 바꿉니다.                             ^|
-echo ^| (지원하는 음원파일 형식: mp3, m4a, wav)                   ^|
-echo ^|                                                           ^|
-echo ^| 파일 복사 실행모드 : 하나의 파일을 지정하여 설정한 소음/소^|
-echo ^| 리 데이터 이름양식으로 입력한 개수만큼 복사합니다.        ^|
-echo ^| ex)[파일이름].[확장자] -^> 01_03_220701_001.[확장자]       ^|
-echo ^| 파일확장자는 원본 파일의 확장자를 따릅니다.               ^|
-echo ^| 모든 확장자의 파일에 대하여 복사합니다.                   ^|
-echo ^| ※파일 지정 시 원하는 파일의 초성만 입력하고 Tab키를 누르 ^|
-echo ^| 면 자동 완성됩니다.                                       ^|
-echo ^| ※파일복사 모드는 파일섞기 설정과 함께 작동하지 않습니다. ^|
-echo *-----------------------------------------------------------*
+if "(%posMenuX%,%posMenuY%)" equ "(1,1)" (
+    echo ^| 이름 바꾸기 실행모드 : 폴더 내에 있는 모든 음원 파일들의  ^| 
+    echo ^| 이름을 소음/소리 데이터 이름양식으로 바꿉니다.            ^| 
+    echo ^| 이름 양식 :                                               ^| 
+    echo ^| [대분류]_[소분류]_[날짜]_[파일번호]_[소음/소리].[확장자]  ^| 
+    echo ^| ex^)01_02_220630_001_NN.wav                                ^| 
+    echo ^| -^>소음-교통수단-철로운송수단, 22년 06월 30일에 녹음한 파일^| 
+    echo ^| 중 1번째 웨이브 파일                                      ^|
+    echo ^| ※음원파일만 이름을 바꿉니다.                             ^|
+    echo ^| ^(지원하는 음원파일 형식: mp3, m4a, wav^)                   ^|
+    echo *-----------------------------------------------------------*
+)
+if "(%posMenuX%,%posMenuY%)" equ "(2,1)" (
+    echo ^| 파일 복사 실행모드 : 하나의 파일을 지정하여 설정한 소음/소^|
+    echo ^| 리 데이터 이름양식으로 입력한 개수만큼 복사합니다.        ^|
+    echo ^| ex^)[파일이름].[확장자] -^> 01_03_220701_001.[확장자]       ^|
+    echo ^| 파일확장자는 원본 파일의 확장자를 따릅니다.               ^|
+    echo ^| 모든 확장자의 파일에 대하여 복사합니다.                   ^|
+    echo ^| ※파일 지정 시 원하는 파일의 초성만 입력하고 Tab키를 누르 ^|
+    echo ^| 면 자동 완성됩니다.                                       ^|
+    echo ^| ※파일복사 모드는 파일섞기 설정과 함께 작동하지 않습니다. ^|
+    echo *-----------------------------------------------------------*
+)
 goto inputSettingModeCode
 :SettingModeSelected
 if "(%posMenuX%,%posMenuY%)" equ "(1,1)" set mode=rename& goto SettingRename
@@ -472,7 +493,6 @@ echo mode:%mode%>>usersetting.txt
 echo mixfile:%mixfile%>>usersetting.txt
 echo backgroundcolor:%bgcolor%>>usersetting.txt
 echo textcolor:%textcolor%>>usersetting.txt
-echo server:%serverIP%>>usersetting.txt
 cd /d "%current%"
 echo 현재 설정이 저장되었습니다. & pause>nul
 goto Setting
@@ -507,9 +527,7 @@ echo ^|-------------------------------------------------------------------------
 if "(%posMenuX%,%posMenuY%)" equ "(1,1)" echo ^| 터미널의 텍스트 색상을 변경합니다.                                          ^|
 if "(%posMenuX%,%posMenuY%)" equ "(2,1)" echo ^| 터미널의 배경 색상을 변경합니다.                                            ^|
 if "(%posMenuX%,%posMenuY%)" equ "(3,1)" echo ^| 설정된 텍스트와 배경 색상을 기본값으로 초기화합니다.                        ^|
-if "(%posMenuX%,%posMenuY%)" equ "(4,1)" echo ^| 업데이트 서버의 IP를 설정합니다.                                            ^|
 echo *-----------------------------------------------------------------------------*
-echo 현재 설정된 서버IP : %serverIP%
 echo ※사용자설정저장:F는 현재 설정을 로컬 파일에 저장합니다.
 echo   프로그램을 종료 후 재시작할 때 저장된 설정을 불러옵니다.
 goto inputSettingProgramCode
@@ -517,7 +535,6 @@ goto inputSettingProgramCode
 if "(%posMenuX%,%posMenuY%)" equ "(1,1)" goto TextColorSetting
 if "(%posMenuX%,%posMenuY%)" equ "(2,1)" goto BgColorSetting
 if "(%posMenuX%,%posMenuY%)" equ "(3,1)" set bgcolor=0& set textcolor=7& color 07 & goto SettingProgram
-if "(%posMenuX%,%posMenuY%)" equ "(4,1)" set /p serverIP=서버IP(ex:192.168.201.100) : & goto SettingProgram
 :TextColorSetting
 set /a MaxX=2
 set /a MaxY=8
@@ -720,6 +737,9 @@ for /f "tokens=2 delims=." %%i in (%listname%) do (set fileExt=%%i& goto getExte
 :renLoop
 if %number% gtr %listnum% goto quit
 for /f "tokens=* skip=%skips%" %%i in (%listname%) do (set temp=%%i & goto getName)
+:ExitPro
+echo 파일 변조가 감지되었습니다. & timeout /t 2 >nul
+exit
 :getName
 rem 파일이름에 .을 2개 이상으로 설정할 시 확장자 변경 오류(파일 이름에 .은 1개씩)
 for /f "tokens=2 delims=. skip=%skips%" %%i in (%listname%) do (set fileExt=%%i& set /a skips=skips+1 & goto getExtension)
@@ -778,6 +798,11 @@ goto Exitprogram
 echo 관리자 권한으로 실행해주세요.
 pause>nul
 exit
+:CheckAlter
+cd %current%
+certutil /hashfile %batchname% SHA256>temphash
+for /f "tokens=* skip=1" %%i in (temphash) do set filehash=%%i & goto endhash
+exit /b
 :baseEnCode
 echo 소리 양식 엑셀파일 생성중...
 echo UEsDBBQABgAIAAAAIQB+UjBRiAEAAAwGAAATAAgCW0NvbnRlbnRfVHlwZXNdLnht>>temp64
