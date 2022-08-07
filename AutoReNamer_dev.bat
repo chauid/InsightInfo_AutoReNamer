@@ -499,7 +499,7 @@ echo 현재 설정이 저장되었습니다. & pause>nul
 goto Setting
 :SettingProgram
 rem ##########프로그램 설정//글자색상, 배경색상##########
-set /a MaxX=3
+set /a MaxX=4
 set /a MaxY=1
 set /a posMenuX=1
 set /a posMenuY=1
@@ -522,7 +522,8 @@ set /p "=| "<nul
 if "(%posMenuX%,%posMenuY%)" equ "(1,1)" (set /p "=텍스트색 바꾸기[*]  "<nul) else (set /p "=텍스트색 바꾸기[ ]  "<nul)
 if "(%posMenuX%,%posMenuY%)" equ "(2,1)" (set /p "=배경색 바꾸기[*]  "<nul) else (set /p "=배경색 바꾸기[ ]  "<nul)
 if "(%posMenuX%,%posMenuY%)" equ "(3,1)" (set /p "=설정 초기화[*]  "<nul) else (set /p "=설정 초기화[ ]  "<nul)
-echo                       ^|
+if "(%posMenuX%,%posMenuY%)" equ "(4,1)" (set /p "=서버IP 설정[*]  "<nul) else (set /p "=서버IP 설정[ ]  "<nul)
+echo       ^|
 echo ^|-----------------------------------------------------------------------------^|
 if "(%posMenuX%,%posMenuY%)" equ "(1,1)" echo ^| 터미널의 텍스트 색상을 변경합니다.                                          ^|
 if "(%posMenuX%,%posMenuY%)" equ "(2,1)" echo ^| 터미널의 배경 색상을 변경합니다.                                            ^|

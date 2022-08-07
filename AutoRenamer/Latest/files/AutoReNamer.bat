@@ -3,7 +3,7 @@ chcp 65001>nul
 setlocal ENABLEDELAYEDEXPANSION
 set current=%~dp0
 set batchname=%~nx0
-rem ##########CurrentVersion:138:##########
+rem ##########CurrentVersion:138:##########ddd
 set /a version=138
 title AutoReName_ver%version:~0,1%.%version:~1,2%
 bcdedit > nul
