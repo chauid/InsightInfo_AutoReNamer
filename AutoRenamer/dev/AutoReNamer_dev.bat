@@ -3,32 +3,32 @@ chcp 65001>nul
 setlocal ENABLEDELAYEDEXPANSION
 set current=%~dp0
 set batchname=%~nx0
-rem ##########CurrentVersion:137:##########
-set /a version=137
+rem ##########CurrentVersion:139:##########
+set /a version=139
 title AutoReName_ver%version:~0,1%.%version:~1,2%
 bcdedit > nul
 if %errorlevel% equ 1 goto noadmin
-call :CheckAlter
 cd %current%
 echo Initialize...
 rem ##########업데이트##########
-if "%1" neq "update" goto init
+if "%1" neq "update" goto CheckAlter
+if not exist %userprofile%\hashcode\ ( mkdir hashcode )
+timeout /t 1 /nobreak >nul
+cd /d %userprofile%\hashcode\
+certutil /hashfile %current%\%batchname% SHA256>hashcode%version%.hash
+for /f "tokens=* skip=1" %%i in (hashcode%version%.hash) do echo %%i>hashcode%version%.hash & goto :genhash
+:genhash
 timeout /t 2 /nobreak > nul
 cd /d %current%
-ren "%batchname%" "AutoReNamer.bat" & start %current%"AutoReNamer.bat" & exit
+ren "%batchname%" "AutoReNamer.bat" & start %current%AutoReNamer.bat & exit
 goto init
 :UpdateProgram
 echo 새로운 버전을 다운로드 중...
 powershell Invoke-WebRequest -Uri %serverIP%/files/AutoReNamer.bat -OutFile %current%NewVersion.bat
 powershell Invoke-WebRequest -Uri %serverIP%/files/update%ReName%log.txt -OutFile %current%AutoRenamer%ReName:~0,1%.%ReName:~1,2%updatelog.txt
-cd /d %userprofile%
-certutil /hashfile NewVersion.bat SHA256>hashcode
-for /f "tokens=* skip=1" %%i in (hashcode) do echo %%i>hashcode & goto :genhash
-:genhash
 echo 프로그램을 재시작합니다.
-timeout /t 1 >nul
 start %current%NewVersion.bat update
-del %current%%batchname%
+del "%current%%batchname%"
 exit
 :UpdateNow
 echo 서버와 연결중... [접속서버IP:%serverIP%]
@@ -43,7 +43,7 @@ if %ReName% equ %version% echo 현재 최신 버전입니다. & timeout /t 4 > n
 if %ReName% lss %version% echo 서버의 버전보다 높습니다. 버전을 확인하세요. & timeout /t 2 >nul & start http://%serverIP%/ & goto Setting
 choice /c yn /m "업데이트 가능한 버전이 있습니다. 업데이트를 진행하시겠습니까?"
 if %errorlevel% equ 1 goto UpdateProgram
-if %errorlevel% equ 2 cls & goto goto startScreen
+if %errorlevel% equ 2 cls & goto startScreen
 :init
 set serverIP=34.168.133.173
 set workercode=000
@@ -115,10 +115,11 @@ if %dirnum% lss 1 goto NoDir
 for /f "tokens=*" %%i in ('dir /a:d /b') do (set dirlist[%dirlistnum%]=%%i & goto LoadDirList)
 goto LoadDirList
 :endhash
-del temphash
-cd /d %userprofile%
-for /f "tokens=*" %%i in (hashcode) do set origin=%%i& call :Alteration
-exit /b
+del temphash.hash
+if not exist %userprofile%\hashcode\ goto ExitPro
+cd /d %userprofile%\hashcode\
+if not exist hashcode%version%.hash goto ExitPro
+for /f "tokens=*" %%i in (hashcode%version%.hash) do set origin=%%i& goto Alteration
 :LoadDirList
 set /a dirlistnum=dirlistnum+1
 rem #####리스트의 인덱스는 1부터 시작, 따라서 문장스킵은 리스트의 인덱스 - 1#####
@@ -159,7 +160,7 @@ if %temp% lss 0 (echo 1~%dirnum%까지만 선택 가능합니다. & pause>nul & 
 goto MvDir
 :Alteration
 if "%filehash%" neq "%origin%" call :ExitPro
-exit /b
+goto init
 :NoDir
 echo 현재 경로 : %cd%
 echo ---------------------------------------------------------------------------
@@ -799,9 +800,9 @@ echo 관리자 권한으로 실행해주세요.
 pause>nul
 exit
 :CheckAlter
-cd %current%
-certutil /hashfile %batchname% SHA256>temphash
-for /f "tokens=* skip=1" %%i in (temphash) do set filehash=%%i & goto endhash
+cd /d "%current%"
+certutil /hashfile %batchname% SHA256>temphash.hash
+for /f "tokens=* skip=1" %%i in (temphash.hash) do set filehash=%%i & goto endhash
 :baseEnCode
 echo 소리 양식 엑셀파일 생성중...
 echo UEsDBBQABgAIAAAAIQB+UjBRiAEAAAwGAAATAAgCW0NvbnRlbnRfVHlwZXNdLnht>>temp64
