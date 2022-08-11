@@ -5,7 +5,7 @@ set current=%~dp0
 set batchname=%~nx0
 rem ##########CurrentVersion:140:##########
 set /a version=140
-title AutoReNamer_ver%version:~0,1%.%version:~1,2%
+title AutoReName_ver%version:~0,1%.%version:~1,2%
 bcdedit > nul
 if %errorlevel% equ 1 goto noadmin
 cd %current%
@@ -1143,4 +1143,3 @@ certutil -decode -f temp64 "%category1%_%category2%_%workercode%_%setdate%_%Fixe
 del temp64
 echo 완료!
 goto endRename
-exit

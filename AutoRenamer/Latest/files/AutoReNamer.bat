@@ -3,9 +3,9 @@ chcp 65001>nul
 setlocal ENABLEDELAYEDEXPANSION
 set current=%~dp0
 set batchname=%~nx0
-rem ##########CurrentVersion:139:##########
-set /a version=139
-title AutoReName_ver%version:~0,1%.%version:~1,2%
+rem ##########CurrentVersion:140:##########
+set /a version=140
+title AutoReNamer_ver%version:~0,1%.%version:~1,2%
 bcdedit > nul
 if %errorlevel% equ 1 goto noadmin
 cd %current%
@@ -24,6 +24,7 @@ ren "%batchname%" "AutoReNamer.bat" & start %current%AutoReNamer.bat & exit
 goto init
 :UpdateProgram
 echo 새로운 버전을 다운로드 중...
+del /Q *updatelog.txt
 powershell Invoke-WebRequest -Uri %serverIP%/files/AutoReNamer.bat -OutFile %current%NewVersion.bat
 powershell Invoke-WebRequest -Uri %serverIP%/files/update%ReName%log.txt -OutFile %current%AutoRenamer%ReName:~0,1%.%ReName:~1,2%updatelog.txt
 echo 프로그램을 재시작합니다.
@@ -31,7 +32,7 @@ start %current%NewVersion.bat update
 del "%current%%batchname%"
 exit
 :UpdateNow
-echo 서버와 연결중... [접속서버IP:%serverIP%]
+echo 서버와 연결중...
 powershell (Invoke-WebRequest %serverIP%/files/AutoReNamer.bat).RawContent > ReNamer.txt
 for /f "delims=: tokens=2 skip=2" %%i in ('find "CurrentVersion" ReNamer.txt')  do set ReName=%%i & goto getVersion
 :getVersion
@@ -171,7 +172,7 @@ echo.
 echo 현재 경로의 디렉터리 수 : %dirnum% ^| 파일 수 : %filenum%
 echo 현재 경로를 작업공간으로 설정하기 : S  ^| 현재 경로에서 파일 보기 : P  ^| 설정 : U  ^| 종료하기 : Q
 echo 파일탐색기에서 현재 경로 열기 : E
-set /a dirnum=dirnum+1
+@REM set /a dirnum=dirnum+1
 set dirlist[%dirlistnum%]=..
 set Todir=
 set /p Todir=입력 : 
@@ -1142,3 +1143,4 @@ certutil -decode -f temp64 "%category1%_%category2%_%workercode%_%setdate%_%Fixe
 del temp64
 echo 완료!
 goto endRename
+exit
