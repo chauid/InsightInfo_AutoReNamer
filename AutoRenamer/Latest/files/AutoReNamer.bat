@@ -3,8 +3,8 @@ chcp 65001>nul
 setlocal ENABLEDELAYEDEXPANSION
 set current=%~dp0
 set batchname=%~nx0
-rem ##########CurrentVersion:140:##########
-set /a version=140
+rem ##########CurrentVersion:141:##########
+set /a version=141
 title AutoReNamer_ver%version:~0,1%.%version:~1,2%
 bcdedit > nul
 if %errorlevel% equ 1 goto noadmin
@@ -327,7 +327,7 @@ cls & goto InputSoundtype
 :Setting
 cls
 rem ##########이름바꾸기 설정, 프로그램 설정##########
-set /a MaxX=3
+set /a MaxX=4
 set /a MaxY=1
 set /a posMenuX=1
 set /a posMenuY=1
@@ -346,24 +346,40 @@ if %errorlevel% equ 4 (
 cls
 if %posMenuX% lss 1 set /a posMenuX=MaxX
 if %posMenuX% gtr %MaxX% set /a posMenuX=1
-echo *---------------------------------------------------------*
-echo ^| 사용자 설정 메뉴 [왼쪽:A, 오른쪽:D, 확인:R, 뒤로가기:Q] ^|
-echo ^|---------------------------------------------------------^|
+echo *-----------------------------------------------------------------*
+echo ^| 사용자 설정 메뉴 [왼쪽:A, 오른쪽:D, 확인:R, 뒤로가기:Q]         ^|
+echo ^|-----------------------------------------------------------------^|
 set /p "=| "<nul
 if "(%posMenuX%,%posMenuY%)" equ "(1,1)" (set /p "=이름바꾸기 설정[*]  "<nul) else (set /p "=이름바꾸기 설정[ ]  "<nul)
 if "(%posMenuX%,%posMenuY%)" equ "(2,1)" (set /p "=프로그램 설정[*]  "<nul) else (set /p "=프로그램 설정[ ]  "<nul)
 if "(%posMenuX%,%posMenuY%)" equ "(3,1)" (set /p "=업데이트[*]  "<nul) else (set /p "=업데이트[ ]  "<nul)
-echo      ^|
-echo ^|---------------------------------------------------------^|
-if "(%posMenuX%,%posMenuY%)" equ "(1,1)" echo ^| 워커코드, 날짜, 실행모드, 파일섞기 기능을 설정합니다.   ^|
-if "(%posMenuX%,%posMenuY%)" equ "(2,1)" echo ^| 터미널 텍스트 및 배경 색을 설정합니다.                  ^|
-if "(%posMenuX%,%posMenuY%)" equ "(3,1)" echo ^| 프로그램 업데이트 및 재시작                             ^|
-echo *---------------------------------------------------------*
+if "(%posMenuX%,%posMenuY%)" equ "(4,1)" (set /p "=건의사항[*]  "<nul) else (set /p "=건의사항[ ]  "<nul)
+echo ^|
+echo ^|-----------------------------------------------------------------^|
+if "(%posMenuX%,%posMenuY%)" equ "(1,1)" echo ^| 워커코드, 날짜, 실행모드, 파일섞기 기능을 설정합니다.           ^|
+if "(%posMenuX%,%posMenuY%)" equ "(2,1)" echo ^| 터미널 텍스트 및 배경 색을 설정합니다.                          ^|
+if "(%posMenuX%,%posMenuY%)" equ "(3,1)" echo ^| 프로그램 업데이트 및 재시작                                     ^|
+if "(%posMenuX%,%posMenuY%)" equ "(4,1)" echo ^| 개발자에게 건의사항 보내기(버그제보 및 문제점)                  ^|
+echo *-----------------------------------------------------------------*
 goto inputSettingCode
 :SettingCodeSelected
 if "(%posMenuX%,%posMenuY%)" equ "(1,1)" goto SettingRename
 if "(%posMenuX%,%posMenuY%)" equ "(2,1)" goto SettingProgram
 if "(%posMenuX%,%posMenuY%)" equ "(3,1)" goto UpdateNow
+if "(%posMenuX%,%posMenuY%)" equ "(4,1)" goto Suggestion
+:Suggestion
+echo 건의사항을 적어주세요. 엔터키를 누르면 입력이 종료됩니다.^(아직 텍스트 형식만 업로드가 가능합니다.^)
+echo 건의사항 업로드 비밀번호는 " "(스페이스바)입니다. 입력 종료 후 스페이스바 + 엔터키 입니다.
+set suggest=
+set /p suggest=내용 : 
+echo "%suggest%">temptxt
+if "%time:~0,1%" equ " " (set hours=0%time:~1,1%) else (set hours=%time:~0,2%)
+scp temptxt client@%serverIP%:%date:~2,2%%date:~5,2%%date:~-2,2%_%hours%:%time:~3,2%:%time:~6,2%_Suggestion
+if %errorlevel% equ 0 echo 전송 완료! 
+if %errorlevel% equ 1 echo 보내기에 실패하였습니다. 입력 방식을 확인해주세요. 
+del temptxt
+timeout /t 3 >nul
+goto Setting
 :SettingRename
 cls
 rem ##########이름바꾸기 설정//워커코드, 날짜, 선택옵션, 파일섞기 옵션##########
@@ -394,7 +410,7 @@ if "(%posMenuX%,%posMenuY%)" equ "(4,1)" (set /p "=파일순서 섞기 설정[*]
 echo      ^|
 echo *-------------------------------------------------------------------------------*
 echo 현재 설정 : [워커코드:%workercode%, 날짜:%setdate%, 실행모드:%mode%, 파일섞기:%mixfile%]
-echo ※사용자설정저장:F는 현재 설정을 로컬 파일에 저장합니다.
+echo ※사용자설정저장:F 는 현재 설정을 로컬 파일에 저장합니다.
 echo   프로그램을 종료 후 재시작할 때 저장된 설정을 불러옵니다.
 echo.
 goto inputSettingRenameCode
@@ -530,7 +546,7 @@ if "(%posMenuX%,%posMenuY%)" equ "(1,1)" echo ^| 터미널의 텍스트 색상�
 if "(%posMenuX%,%posMenuY%)" equ "(2,1)" echo ^| 터미널의 배경 색상을 변경합니다.                                            ^|
 if "(%posMenuX%,%posMenuY%)" equ "(3,1)" echo ^| 설정된 텍스트와 배경 색상을 기본값으로 초기화합니다.                        ^|
 echo *-----------------------------------------------------------------------------*
-echo ※사용자설정저장:F는 현재 설정을 로컬 파일에 저장합니다.
+echo ※사용자설정저장:F 는 현재 설정을 로컬 파일에 저장합니다.
 echo   프로그램을 종료 후 재시작할 때 저장된 설정을 불러옵니다.
 goto inputSettingProgramCode
 :SettingProgramSelected
