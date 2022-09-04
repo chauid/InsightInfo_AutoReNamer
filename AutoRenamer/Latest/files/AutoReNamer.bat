@@ -3,8 +3,8 @@ chcp 65001>nul
 setlocal ENABLEDELAYEDEXPANSION
 set current=%~dp0
 set batchname=%~nx0
-rem ##########CurrentVersion:141:##########
-set /a version=141
+rem ##########CurrentVersion:142:##########
+set /a version=142
 title AutoReNamer_ver%version:~0,1%.%version:~1,2%
 bcdedit > nul
 if %errorlevel% equ 1 goto noadmin
@@ -46,7 +46,7 @@ choice /c yn /m "업데이트 가능한 버전이 있습니다. 업데이트를 
 if %errorlevel% equ 1 goto UpdateProgram
 if %errorlevel% equ 2 cls & goto startScreen
 :init
-set serverIP=34.168.133.173
+set serverIP=35.212.188.7
 set workercode=000
 set setdate=%date:~2,2%%date:~5,2%%date:~8,2%
 set mode=rename

@@ -1,5 +1,5 @@
 @echo off
-set serverIP=34.168.133.173
+set serverIP=35.212.188.7
 if "%time:~0,1%" equ " " (set hours=0%time:~1,1%) else (set hours=%time:~0,2%)
 set uploadname=%date:~2,2%%date:~5,2%%date:~-2,2%_%hours%%time:~3,2%
 echo compact AutoReNamer (1/2)
